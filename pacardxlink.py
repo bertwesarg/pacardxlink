@@ -148,7 +148,7 @@ class PulseCardXLink(
         name = card_a.display_name + ' x ' + card_b.display_name
         menu_item = gtk.MenuItem(name)
 
-        menu.append(menu_item)
+        menu.insert(menu_item, len(menu.get_children()) - self.static_menu_entries)
         menu_item.connect('activate', self.xlink_drop_activate, xlink)
         menu_item.show()
 
