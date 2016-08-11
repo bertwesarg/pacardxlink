@@ -33,7 +33,7 @@ class PulseCardXLink(
         menu.append(item)
         item.show()
 
-        item = gtk.MenuItem('Quit')
+        item = gtk.ImageMenuItem(gtk.STOCK_QUIT)
         menu.append(item)
         item.connect('activate', self.quit_activate)
         item.show()
@@ -67,7 +67,13 @@ class PulseCardXLink(
             if xlink in self.xlinks.keys():
                 continue
 
-            item = gtk.MenuItem(c.display_name)
+            item = gtk.ImageMenuItem()
+            item.set_label(c.display_name)
+            if c.icon_name:
+                image = gtk.image_new_from_icon_name(c.icon_name, gtk.ICON_SIZE_MENU)
+                item.set_image(image)
+                item.set_always_show_image(True)
+
             card.menu_sub.append(item)
             item.connect('activate', self.card_xlink_with_activate, xlink)
             item.show()
@@ -169,15 +175,16 @@ class PulseCardXLink(
     def add_card_to_menu(self, card):
         menu = self.get_menu()
 
+        card.icon_name = None
         if 'device.icon_name' in card.proplist.keys():
-            icon_name = '-'.join(card.proplist['device.icon_name'].split('-')[:-1])
-            image = gtk.image_new_from_icon_name(icon_name, gtk.ICON_SIZE_MENU)
-            card.menu_item = gtk.ImageMenuItem()
+            card.icon_name = '-'.join(card.proplist['device.icon_name'].split('-')[:-1])
+
+        card.menu_item = gtk.ImageMenuItem()
+        card.menu_item.set_label(card.display_name)
+        if card.icon_name:
+            image = gtk.image_new_from_icon_name(card.icon_name, gtk.ICON_SIZE_MENU)
             card.menu_item.set_image(image)
-            card.menu_item.set_label(card.display_name)
             card.menu_item.set_always_show_image(True)
-        else:
-            card.menu_item = gtk.MenuItem(card.display_name)
 
         menu.insert(card.menu_item, len(menu.get_children()) - self.static_menu_entries)
         card.menu_item.connect('activate', self.card_activate, card.index)
