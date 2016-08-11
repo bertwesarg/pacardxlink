@@ -112,9 +112,6 @@ class PulseCardXLink(
             if source.card == card_b.index and not card_b_source and not source.monitor_of_sink_name:
                 card_b_source = source
 
-        if not card_a_source or not card_b_source:
-            return
-
         card_a_sink = None
         card_b_sink = None
 
@@ -124,22 +121,31 @@ class PulseCardXLink(
             if sink.card == card_b.index and not card_b_sink:
                 card_b_sink = sink
 
-        if not card_a_sink or not card_b_sink:
+        loop_a_b = None
+        if card_a_source and card_b_sink:
+            loop_a_b = self.pa.module_load('module-loopback',
+                    ('latency_msec=1',
+                    'source=%s' % (card_a_source.name,),
+                    'sink=%s' % (card_b_sink.name,)))
+
+        loop_b_a = None
+        if card_b_source and card_a_sink:
+            loop_b_a = self.pa.module_load('module-loopback',
+                    ('latency_msec=1',
+                    'source=%s' % (card_b_source.name,),
+                    'sink=%s' % (card_a_sink.name,)))
+
+        if (loop_a_b, loop_b_a) == (None, None):
             return
-
-        loop_a_b = self.pa.module_load('module-loopback',
-                ('latency_msec=1',
-                'source=%s' % (card_a_source.name,),
-                'sink=%s' % (card_b_sink.name,)))
-
-        loop_b_a = self.pa.module_load('module-loopback',
-                ('latency_msec=1',
-                'source=%s' % (card_b_source.name,),
-                'sink=%s' % (card_a_sink.name,)))
 
         menu = self.get_menu()
 
-        name = card_a.display_name + ' x ' + card_b.display_name
+        if loop_a_b is not None and loop_b_a is None:
+            name = card_a.display_name + ' > ' + card_b.display_name
+        elif loop_a_b is None and loop_b_a is not None:
+            name = card_a.display_name + ' < ' + card_b.display_name
+        else: #loop_a_b is not None and loop_b_a is not None
+            name = card_a.display_name + ' x ' + card_b.display_name
         menu_item = gtk.MenuItem(name)
 
         menu.insert(menu_item, len(menu.get_children()) - self.static_menu_entries)
@@ -155,8 +161,10 @@ class PulseCardXLink(
             return
         xlink_props = self.xlinks.pop(xlink)
 
-        self.pa.module_unload(xlink_props[0])
-        self.pa.module_unload(xlink_props[1])
+        if xlink_props[0] is not None:
+            self.pa.module_unload(xlink_props[0])
+        if xlink_props[1] is not None:
+            self.pa.module_unload(xlink_props[1])
         self.get_menu().remove(xlink_props[2])
 
     def add_card_to_menu(self, card):
