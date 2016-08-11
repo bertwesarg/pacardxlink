@@ -170,7 +170,7 @@ class PulseCardXLink(
         menu = self.get_menu()
 
         if 'device.icon_name' in card.proplist.keys():
-            icon_name = '_'.join(card.proplist['device.icon_name'].split('_')[:-1])
+            icon_name = '-'.join(card.proplist['device.icon_name'].split('-')[:-1])
             image = gtk.image_new_from_icon_name(icon_name, gtk.ICON_SIZE_MENU)
             card.menu_item = gtk.ImageMenuItem()
             card.menu_item.set_image(image)
