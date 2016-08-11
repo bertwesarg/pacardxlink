@@ -117,7 +117,7 @@ class PulseCardXLink(
         for source in self.pa.source_list():
             if source.card == card_a.index and not card_a_source and not source.monitor_of_sink_name:
                 card_a_source = source
-            if source.card == card_b.index and card_b_source and not source.monitor_of_sink_name:
+            if source.card == card_b.index and not card_b_source and not source.monitor_of_sink_name:
                 card_b_source = source
 
         if not card_a_source or not card_b_source:
@@ -160,12 +160,12 @@ class PulseCardXLink(
         menu_item.connect('activate', self.xlink_drop_activate, xlink)
         menu_item.show()
 
-        self.xlinks[xlink] = (loop_a_a, loop_b_a, menu_item)
+        self.xlinks[xlink] = (loop_a_b, loop_b_a, menu_item)
         print loop_a_b, loop_b_a
 
         self.set_menu(menu)
 
-    def xlink_drop_activate(self, xlink):
+    def xlink_drop_activate(self, w, xlink):
         if xlink not in self.xlinks.keys():
             return
         xlink_props = self.xlinks.pop(xlink)
