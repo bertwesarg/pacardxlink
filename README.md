@@ -9,7 +9,7 @@ Dependencies
 
  - PyGtk 2.0
  - AppIndicator 3.0
- - [pulsectl] 16.8.2 + [pulsectl set-default-patch]
+ - [pulsectl] 16.8.7
 
-[pulsectl]:                   https://pypi.python.org/pypi/pulsectl
-[pulsectl set-default-patch]: https://github.com/mk-fg/python-pulse-control/pull/7
+[pulsectl]: https://pypi.python.org/pypi/pulsectl
+
