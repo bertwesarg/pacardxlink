@@ -93,11 +93,13 @@ class PulseCardXLink(
             if source.card == card.index and not source.monitor_of_sink_name:
                 print 'set-default-source:', source.name
                 self.pa.default_set(source)
+                break
 
         for sink in self.pa.sink_list():
             if sink.card == card.index:
                 print 'set-default-sink:', sink.name
                 self.pa.default_set(sink)
+                break
 
     def card_xlink_with_activate(self, w, xlink):
         if xlink[0] not in self.cards.keys():
