@@ -80,24 +80,18 @@ class PulseCardXLink(
 
         card.menu_item.set_submenu(card.menu_sub)
 
-        print card.display_name
-
     def card_set_as_default_activate(self, w, ci):
         if ci not in self.cards.keys():
             return
         card = self.cards[ci]
 
-        print 'set-as-default:', card.display_name
-
         for source in self.pa.source_list():
             if source.card == card.index and not source.monitor_of_sink_name:
-                print 'set-default-source:', source.name
                 self.pa.default_set(source)
                 break
 
         for sink in self.pa.sink_list():
             if sink.card == card.index:
-                print 'set-default-sink:', sink.name
                 self.pa.default_set(sink)
                 break
 
@@ -108,8 +102,6 @@ class PulseCardXLink(
             return
         card_a = self.cards[xlink[0]]
         card_b = self.cards[xlink[1]]
-
-        print 'xlink:', card_a.display_name, 'x', card_b.display_name
 
         card_a_source = None
         card_b_source = None
@@ -123,9 +115,6 @@ class PulseCardXLink(
         if not card_a_source or not card_b_source:
             return
 
-        print 'Source for card a:', card_a_source.name
-        print 'Source for card b:', card_b_source.name
-
         card_a_sink = None
         card_b_sink = None
 
@@ -137,9 +126,6 @@ class PulseCardXLink(
 
         if not card_a_sink or not card_b_sink:
             return
-
-        print 'Sink for card a:', card_a_sink.name
-        print 'Sink for card b:', card_b_sink.name
 
         loop_a_b = self.pa.module_load('module-loopback',
                 ('latency_msec=1',
@@ -161,7 +147,6 @@ class PulseCardXLink(
         menu_item.show()
 
         self.xlinks[xlink] = (loop_a_b, loop_b_a, menu_item)
-        print loop_a_b, loop_b_a
 
         self.set_menu(menu)
 
