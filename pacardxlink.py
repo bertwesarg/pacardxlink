@@ -10,8 +10,7 @@ import appindicator
 
 import pulsectl
 
-class PulseCardXLink(
-    appindicator.Indicator):
+class PulseCardXLink(object):
 
     cards = {}
     xlinks = {}
@@ -20,11 +19,11 @@ class PulseCardXLink(
 
         self.pa = pulsectl.Pulse('PulseAudio Card XLink')
 
-        appindicator.Indicator.__init__(self,
+        self.ai = appindicator.Indicator(
             'pa-card-xlink',
             'audio-headset',
             appindicator.CATEGORY_HARDWARE)
-        self.set_status(appindicator.STATUS_ACTIVE)
+        self.ai.set_status(appindicator.STATUS_ACTIVE)
 
         # create a menu
         menu = gtk.Menu()
@@ -40,7 +39,7 @@ class PulseCardXLink(
 
         self.static_menu_entries = len(menu.get_children())
 
-        self.set_menu(menu)
+        self.ai.set_menu(menu)
 
         self.refresh_cards()
 
@@ -138,7 +137,7 @@ class PulseCardXLink(
         if (loop_a_b, loop_b_a) == (None, None):
             return
 
-        menu = self.get_menu()
+        menu = self.ai.get_menu()
 
         if loop_a_b is not None and loop_b_a is None:
             name = card_a.display_name + ' > ' + card_b.display_name
@@ -154,7 +153,7 @@ class PulseCardXLink(
 
         self.xlinks[xlink] = (loop_a_b, loop_b_a, menu_item)
 
-        self.set_menu(menu)
+        self.ai.set_menu(menu)
 
     def xlink_drop_activate(self, w, xlink):
         if xlink not in self.xlinks.keys():
@@ -165,10 +164,9 @@ class PulseCardXLink(
             self.pa.module_unload(xlink_props[0])
         if xlink_props[1] is not None:
             self.pa.module_unload(xlink_props[1])
-        self.get_menu().remove(xlink_props[2])
+        self.ai.get_menu().remove(xlink_props[2])
 
-    def add_card_to_menu(self, card):
-        menu = self.get_menu()
+    def add_card_to_menu(self, menu, card):
 
         card.icon_name = None
         if 'device.icon_name' in card.proplist.keys():
@@ -205,13 +203,13 @@ class PulseCardXLink(
 
         card.menu_item.set_submenu(card.menu_sub)
 
-        self.set_menu(menu)
-
     def refresh_cards(self):
         # there are not the same, cleanup previous root, if any
         for card in self.cards.values():
-            self.get_menu().remove(card.menu_item)
+            self.ai.get_menu().remove(card.menu_item)
         self.cards = {}
+        for xlink in self.xlinks.values():
+            self.ai.get_menu().remove(xlink[2])
 
         for card in self.pa.card_list():
             name = card.name
@@ -225,8 +223,15 @@ class PulseCardXLink(
             self.cards[card.index] = card
             #print card.index, name
 
+        menu = self.ai.get_menu()
+
         for card in self.cards.values():
-            self.add_card_to_menu(card)
+            self.add_card_to_menu(menu, card)
+
+        for xlink in self.xlinks.values():
+            menu.insert(xlink[2], len(menu.get_children()) - self.static_menu_entries)
+
+        self.ai.set_menu(menu)
 
 if __name__ == '__main__':
     i = PulseCardXLink()
