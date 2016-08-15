@@ -28,6 +28,19 @@ class PulseCardXLink(object):
         # create a menu
         menu = gtk.Menu()
 
+        self.default_device_menu = gtk.MenuItem('Default device')
+        menu.append(self.default_device_menu)
+        self.default_device_menu.connect('activate', self.default_device_activate)
+        self.default_device_menu.show()
+        self.default_device_menu.set_submenu(gtk.Menu())
+
+
+        self.xlink_devices_menu = gtk.MenuItem('Cross links')
+        menu.append(self.xlink_devices_menu)
+        self.xlink_devices_menu.connect('activate', self.xlink_devices_activate)
+        self.xlink_devices_menu.show()
+        self.xlink_devices_menu.set_submenu(gtk.Menu())
+
         item = gtk.SeparatorMenuItem()
         menu.append(item)
         item.show()
@@ -37,24 +50,60 @@ class PulseCardXLink(object):
         item.connect('activate', self.quit_activate)
         item.show()
 
-        self.static_menu_entries = len(menu.get_children())
-
         self.ai.set_menu(menu)
-
-        self.refresh_cards()
 
     def quit_activate(self, w):
         #print 'exit indicator'
         gtk.main_quit()
 
-    def card_activate(self, w, ci):
-        if ci not in self.cards.keys():
+    def default_device_activate(self, w):
+        self.refresh_cards()
+
+        submenu = gtk.Menu()
+
+        # populate devices menu
+        for card in self.cards.values():
+            self.add_card_to_menu(submenu, card, self.card_set_as_default_activate, card.index)
+
+        w.set_submenu(submenu)
+
+    def xlink_devices_activate(self, w):
+        self.refresh_cards()
+
+        submenu = gtk.Menu()
+
+        # populate devices menu
+        for card in self.cards.values():
+            item = self.add_card_to_menu(submenu, card, self.card_xlink_with_activate, card.index)
+            item.set_submenu(gtk.Menu())
+
+        item = gtk.SeparatorMenuItem()
+        submenu.append(item)
+        item.show()
+
+        item = gtk.MenuItem('Drop Cross Link:')
+        item.set_sensitive(False)
+        submenu.append(item)
+        item.show()
+
+        for xlink in self.xlinks:
+            props = self.xlinks[xlink]
+
+            item = gtk.MenuItem(props[2])
+
+            submenu.append(item)
+            item.connect('activate', self.xlink_drop_activate, xlink)
+            item.show()
+
+        w.set_submenu(submenu)
+
+    def card_xlink_with_activate(self, w, ci):
+        self.refresh_cards()
+        if ci not in self.cards:
             return
         card = self.cards[ci]
 
-        # drop all 'other' cards first
-        while len(card.menu_sub.get_children()) > 3:
-            card.menu_sub.remove(card.menu_sub.get_children()[3])
+        submenu = gtk.Menu()
 
         for c in self.cards.values():
             if c.index == card.index:
@@ -66,21 +115,13 @@ class PulseCardXLink(object):
             if xlink in self.xlinks.keys():
                 continue
 
-            item = gtk.ImageMenuItem()
-            item.set_label(c.display_name)
-            if c.icon_name:
-                image = gtk.image_new_from_icon_name(c.icon_name, gtk.ICON_SIZE_MENU)
-                item.set_image(image)
-                item.set_always_show_image(True)
+            self.add_card_to_menu(submenu, c, self.xlink_activate, xlink)
 
-            card.menu_sub.append(item)
-            item.connect('activate', self.card_xlink_with_activate, xlink)
-            item.show()
-
-        card.menu_item.set_submenu(card.menu_sub)
+        w.set_submenu(submenu)
 
     def card_set_as_default_activate(self, w, ci):
-        if ci not in self.cards.keys():
+        self.refresh_cards()
+        if ci not in self.cards:
             return
         card = self.cards[ci]
 
@@ -94,10 +135,11 @@ class PulseCardXLink(object):
                 self.pa.default_set(sink)
                 break
 
-    def card_xlink_with_activate(self, w, xlink):
-        if xlink[0] not in self.cards.keys():
+    def xlink_activate(self, w, xlink):
+        self.refresh_cards()
+        if xlink[0] not in self.cards:
             return
-        if xlink[1] not in self.cards.keys():
+        if xlink[1] not in self.cards:
             return
         card_a = self.cards[xlink[0]]
         card_b = self.cards[xlink[1]]
@@ -125,7 +167,9 @@ class PulseCardXLink(object):
             loop_a_b = self.pa.module_load('module-loopback',
                     ('latency_msec=1',
                     'source=%s' % (card_a_source.name,),
-                    'sink=%s' % (card_b_sink.name,)))
+                    'sink=%s' % (card_b_sink.name,),
+                    'source_dont_move=on',
+                    'sink_dont_move=on'))
 
         loop_b_a = None
         if card_b_source and card_a_sink:
@@ -137,26 +181,18 @@ class PulseCardXLink(object):
         if (loop_a_b, loop_b_a) == (None, None):
             return
 
-        menu = self.ai.get_menu()
-
         if loop_a_b is not None and loop_b_a is None:
             name = card_a.display_name + ' > ' + card_b.display_name
         elif loop_a_b is None and loop_b_a is not None:
             name = card_a.display_name + ' < ' + card_b.display_name
         else: #loop_a_b is not None and loop_b_a is not None
             name = card_a.display_name + ' x ' + card_b.display_name
-        menu_item = gtk.MenuItem(name)
 
-        menu.insert(menu_item, len(menu.get_children()) - self.static_menu_entries)
-        menu_item.connect('activate', self.xlink_drop_activate, xlink)
-        menu_item.show()
-
-        self.xlinks[xlink] = (loop_a_b, loop_b_a, menu_item)
-
-        self.ai.set_menu(menu)
+        self.xlinks[xlink] = (loop_a_b, loop_b_a, name)
 
     def xlink_drop_activate(self, w, xlink):
-        if xlink not in self.xlinks.keys():
+        self.refresh_cards()
+        if xlink not in self.xlinks:
             return
         xlink_props = self.xlinks.pop(xlink)
 
@@ -164,52 +200,28 @@ class PulseCardXLink(object):
             self.pa.module_unload(xlink_props[0])
         if xlink_props[1] is not None:
             self.pa.module_unload(xlink_props[1])
-        self.ai.get_menu().remove(xlink_props[2])
 
-    def add_card_to_menu(self, menu, card):
+    def add_card_to_menu(self, menu, card, action, *args):
 
         card.icon_name = None
         if 'device.icon_name' in card.proplist.keys():
             card.icon_name = '-'.join(card.proplist['device.icon_name'].split('-')[:-1])
 
-        card.menu_item = gtk.ImageMenuItem()
-        card.menu_item.set_label(card.display_name)
+        item = gtk.ImageMenuItem()
+        item.set_label(card.display_name)
         if card.icon_name:
             image = gtk.image_new_from_icon_name(card.icon_name, gtk.ICON_SIZE_MENU)
-            card.menu_item.set_image(image)
-            card.menu_item.set_always_show_image(True)
+            item.set_image(image)
+            item.set_always_show_image(True)
 
-        menu.insert(card.menu_item, len(menu.get_children()) - self.static_menu_entries)
-        card.menu_item.connect('activate', self.card_activate, card.index)
-        card.menu_item.show()
-
-        card.menu_sub = gtk.Menu()
-
-        item = gtk.MenuItem('Set as default')
-        card.menu_sub.append(item)
-        #todo disable if this is already the default card?
-        item.set_sensitive(True)
-        item.connect('activate', self.card_set_as_default_activate, card.index)
+        menu.append(item)
+        item.connect('activate', action, *args)
         item.show()
 
-        item = gtk.SeparatorMenuItem()
-        card.menu_sub.append(item)
-        item.show()
-
-        item = gtk.MenuItem('Cross link with:')
-        card.menu_sub.append(item)
-        item.set_sensitive(False)
-        item.show()
-
-        card.menu_item.set_submenu(card.menu_sub)
+        return item
 
     def refresh_cards(self):
-        # there are not the same, cleanup previous root, if any
-        for card in self.cards.values():
-            self.ai.get_menu().remove(card.menu_item)
-        self.cards = {}
-        for xlink in self.xlinks.values():
-            self.ai.get_menu().remove(xlink[2])
+        cards = {}
 
         for card in self.pa.card_list():
             name = card.name
@@ -223,15 +235,17 @@ class PulseCardXLink(object):
             self.cards[card.index] = card
             #print card.index, name
 
-        menu = self.ai.get_menu()
+        # drop xlinks, for cards which do not exists anymore
+        modules = self.pa.module_list()
+        for xlink in self.xlinks:
+            if xlink[0] in self.cards and xlink[1] in self.cards:
+                continue
 
-        for card in self.cards.values():
-            self.add_card_to_menu(menu, card)
-
-        for xlink in self.xlinks.values():
-            menu.insert(xlink[2], len(menu.get_children()) - self.static_menu_entries)
-
-        self.ai.set_menu(menu)
+            props = self.xlinks.pop(xlink)
+            if xlink_props[0] is not None:
+                self.pa.module_unload(props[0])
+            if xlink_props[1] is not None:
+                self.pa.module_unload(props[1])
 
 if __name__ == '__main__':
     i = PulseCardXLink()
