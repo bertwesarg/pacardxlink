@@ -9,7 +9,6 @@ Dependencies
 
  - PyGtk 2.0
  - AppIndicator 3.0
- - [pulsectl] 16.8.8 + [pulsectl fix-pulse-op-wrapper]
+ - [pulsectl] 16.8.14
 
-[pulsectl]:                      https://pypi.python.org/pypi/pulsectl
-[pulsectl fix-pulse-op-wrapper]: https://github.com/mk-fg/python-pulse-control/pull/9
+[pulsectl]: https://pypi.python.org/pypi/pulsectl
