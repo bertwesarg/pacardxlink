@@ -59,10 +59,14 @@ class PulseCardXLink(object):
     def default_device_activate(self, w):
         self.refresh_cards()
 
-        submenu = gtk.Menu()
+        #submenu = gtk.Menu()
+        submenu = w.get_submenu()
+        for child in submenu.get_children():
+            submenu.remove(child)
 
         # populate devices menu
         for card in self.cards.values():
+            #print 'default:', card.index, card.display_name
             self.add_card_to_menu(submenu, card, self.card_set_as_default_activate, card.index)
 
         w.set_submenu(submenu)
@@ -70,21 +74,21 @@ class PulseCardXLink(object):
     def xlink_devices_activate(self, w):
         self.refresh_cards()
 
-        submenu = gtk.Menu()
+        #submenu = gtk.Menu()
+        submenu = w.get_submenu()
+        for child in submenu.get_children():
+            submenu.remove(child)
 
         # populate devices menu
         for card in self.cards.values():
+            #print 'xlink:', card.index, card.display_name
             item = self.add_card_to_menu(submenu, card, self.card_xlink_with_activate, card.index)
             item.set_submenu(gtk.Menu())
 
-        item = gtk.SeparatorMenuItem()
-        submenu.append(item)
-        item.show()
-
-        item = gtk.MenuItem('Drop Cross Link:')
-        item.set_sensitive(False)
-        submenu.append(item)
-        item.show()
+        if len(self.xlinks):
+            item = gtk.SeparatorMenuItem()
+            submenu.append(item)
+            item.show()
 
         for xlink in self.xlinks:
             props = self.xlinks[xlink]
@@ -103,7 +107,10 @@ class PulseCardXLink(object):
             return
         card = self.cards[ci]
 
-        submenu = gtk.Menu()
+        #submenu = gtk.Menu()
+        submenu = w.get_submenu()
+        for child in submenu.get_children():
+            submenu.remove(child)
 
         for c in self.cards.values():
             if c.index == card.index:
@@ -115,6 +122,7 @@ class PulseCardXLink(object):
             if xlink in self.xlinks.keys():
                 continue
 
+            #print 'xlink with:', c.index, c.display_name
             self.add_card_to_menu(submenu, c, self.xlink_activate, xlink)
 
         w.set_submenu(submenu)
@@ -236,7 +244,6 @@ class PulseCardXLink(object):
             #print card.index, name
 
         # drop xlinks, for cards which do not exists anymore
-        modules = self.pa.module_list()
         for xlink in self.xlinks:
             if xlink[0] in self.cards and xlink[1] in self.cards:
                 continue
