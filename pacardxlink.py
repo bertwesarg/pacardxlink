@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys, inspect, traceback
+import os
+import sys
 
 import pygtk
 pygtk.require('2.0')
@@ -229,7 +230,7 @@ class PulseCardXLink(object):
         return item
 
     def refresh_cards(self):
-        cards = {}
+        self.cards = {}
 
         for card in self.pa.card_list():
             name = card.name
