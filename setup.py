@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name = 'pacardxlink',
-    version = '1.0',
+    version = '1.1',
     author = 'Bert Wesarg',
-    author_email = 'see@github',
+    author_email = 'bertwesarg@users.noreply.github.com',
     description = 'A PulseAudio AppIndicator to cross link the inputs and outputs of two audio devices',
     license = '3-clause BSD',
     url = 'https://github.com/bertwesarg/pacardxlink',
