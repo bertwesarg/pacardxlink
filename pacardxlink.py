@@ -137,11 +137,22 @@ class PulseCardXLink(object):
         for source in self.pa.source_list():
             if source.card == card.index and not source.monitor_of_sink_name:
                 self.pa.default_set(source)
+                for source_output in self.pa.source_output_list():
+                    if 'application.id' in source_output.proplist and \
+                        source_output.proplist['application.id'] in [
+                            'org.PulseAudio.pavucontrol',
+                            'org.gnome.VolumeControl',
+                            'org.mate.VolumeControl',
+                            'org.kde.kmixd']:
+                        continue
+                    self.pa.source_output_move(source_output.index, source.index)
                 break
 
         for sink in self.pa.sink_list():
             if sink.card == card.index:
                 self.pa.default_set(sink)
+                for sink_input in self.pa.sink_input_list():
+                    self.pa.sink_input_move(sink_input.index, sink.index)
                 break
 
     def xlink_activate(self, w, xlink):
